@@ -64,7 +64,7 @@ class ExportService {
         globalIndex++;
         final timeStr = DateFormat('yyyy-M-d HH:mm').format(photo.captureTime);
 
-        // 段头: 1. 时间: 2026-8-2 16:25 (下方分隔线)
+        // 段头: 序号 (下方分隔线)
         builder = builder.add(
           DocxParagraph(
             borderBottomSide: DocxBorderSide(
@@ -75,7 +75,7 @@ class ExportService {
             paddingBottom: 4,
             children: [
               DocxText(
-                '$globalIndex. 时间: $timeStr',
+                '$globalIndex.',
                 fontSize: 16,
                 fontWeight: DocxFontWeight.bold,
                 color: DocxColor('2E5496'),

@@ -13,7 +13,7 @@ class AnnotationData {
   final List<Offset> points;       // 自由画笔路径点
   final Offset? start;             // 直线起点
   final Offset? end;               // 直线终点
-  final Rect? rect;                // 矩形/圆形区域
+  final Rect? rect;                // 矩形区域
   final String? text;              // 文字内容
   final Offset? textPosition;      // 文字位置
   final int colorValue;            // Color.value
