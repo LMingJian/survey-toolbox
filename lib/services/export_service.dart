@@ -64,7 +64,7 @@ class ExportService {
         globalIndex++;
         final timeStr = DateFormat('yyyy-M-d HH:mm').format(photo.captureTime);
 
-        // 段头: 序号 (下方分隔线)
+        // 段头: 序号 + 备注内容 (下方分隔线)
         builder = builder.add(
           DocxParagraph(
             borderBottomSide: DocxBorderSide(
@@ -80,14 +80,15 @@ class ExportService {
                 fontWeight: DocxFontWeight.bold,
                 color: DocxColor('2E5496'),
               ),
+              if (photo.note.isNotEmpty)
+                DocxText(
+                  ' ${photo.note}',
+                  fontSize: 14,
+                  color: DocxColor('333333'),
+                ),
             ],
           ),
         );
-
-        // 备注
-        if (photo.note.isNotEmpty) {
-          builder = builder.p(photo.note);
-        }
 
         // 图片
         final imageBytes = await _readImage(project.id, photo);
