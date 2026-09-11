@@ -7,6 +7,12 @@ import '../models/project.dart';
 import '../models/photo_record.dart';
 
 class ExportService {
+  /// 兜底高宽比（高 / 宽 = 3 / 4，即 4:3 横图）。
+  ///
+  /// 作为**单一真值来源**：`_getImageSize` 的兜底尺寸与导出时的等比换算回退
+  /// 都引用它，避免两处各自写死数字、日后与 `maxW` 脱钩。
+  static const double _fallbackHeightRatio = 3 / 4;
+
   Future<Uint8List> exportToBytes(Project project) async {
     debugPrint(
       '[Export] 开始, 项目: ${project.name}, 照片: ${project.photos.length}, '
@@ -66,8 +72,6 @@ class ExportService {
       ),
     );
 
-    builder = builder.add(DocxParagraph(children: [])); // 空行
-
     for (final section in sections) {
       // 分组小标题（未分组且项目无分组时不输出）
       final title = section.title;
@@ -90,12 +94,13 @@ class ExportService {
             ],
           ),
         );
-        builder = builder.add(DocxParagraph(children: [])); // 空行
       }
 
-      // 段内按拍摄时间排序（与改造前一致）
-      final photos = List<PhotoRecord>.from(section.photos)
-        ..sort((a, b) => a.captureTime.compareTo(b.captureTime));
+      // 段内保持 project.photos 的数组顺序 —— 即列表显示顺序，
+      // 包含长按拖拽的手动调整结果；不再按拍摄时间重排。
+      // section.photos 由 project.photos.where(...) 生成，本身已是数组顺序，
+      // 且 sections 构建后不再被修改，故直接引用，无需再复制一份。
+      final photos = section.photos;
 
       for (final photo in photos) {
         globalIndex++;
@@ -120,7 +125,7 @@ class ExportService {
               if (photo.note.isNotEmpty)
                 DocxText(
                   ' ${photo.note}',
-                  fontSize: 14,
+                  fontSize: 16,
                   color: DocxColor('333333'),
                 ),
             ],
@@ -131,20 +136,24 @@ class ExportService {
         final imageBytes = await _readImage(project.id, photo);
         if (imageBytes != null) {
           final dims = await _getImageSize(imageBytes);
-          final maxW = 300.0;
+          final maxW = 100.0;
+          // 按原始宽高比等比换算。判零必须同时校验 width —— 分母是 width，
+          // 只看 height 会在 width == 0 时除零得到 Infinity / NaN。
+          // 回退高度由 maxW 推导（不再是与 maxW 脱钩的固定数字）。
+          final height = dims.width > 0 && dims.height > 0
+              ? maxW * dims.height / dims.width
+              : maxW * _fallbackHeightRatio;
           builder = builder.add(
             DocxImage(
               bytes: imageBytes,
               extension: 'png',
               width: maxW,
-              height: dims.height > 0 ? maxW * dims.height / dims.width : 375.0,
+              height: height,
               align: DocxAlign.center,
               altText: '勘察照片 $timeStr',
             ),
           );
         }
-
-        builder = builder.add(DocxParagraph(children: [])); // 间隔
       }
     }
 
@@ -176,7 +185,8 @@ class ExportService {
       frame.image.dispose();
       return size;
     } catch (_) {
-      return const ui.Size(500, 375);
+      // 100 × (3/4) = 75，与 _fallbackHeightRatio 保持一致
+      return const ui.Size(100, 100.0 * _fallbackHeightRatio);
     }
   }
 }
