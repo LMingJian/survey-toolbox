@@ -11,6 +11,7 @@ import '../models/photo_record.dart';
 import '../services/project_service.dart';
 import '../services/export_service.dart';
 
+import 'camera_page.dart';
 import 'photo_editor_page.dart';
 
 class ProjectPage extends StatefulWidget {
@@ -81,7 +82,42 @@ class _ProjectPageState extends State<ProjectPage> {
     }
   }
 
+  /// 相机实现开关
+  ///
+  /// - `true`（默认）：使用应用内自研相机 [CameraPage]，点快门即成像落盘，
+  ///   全程无任何确认步骤；
+  /// - `false`：回退到系统相机（image_picker）。系统相机 App 自带的
+  ///   「确认 / 重拍」页由相机 App 提供，本应用无法关闭，仅作为自研相机
+  ///   出现异常时的备用通路。
+  static const bool _useBuiltInCamera = true;
+
   Future<void> _takePhoto() async {
+    if (_useBuiltInCamera) {
+      await _openBuiltInCamera();
+    } else {
+      await _takePhotoWithSystemCamera();
+    }
+  }
+
+  /// 应用内自研相机：拍完停留相机页可连拍，返回后刷新列表
+  Future<void> _openBuiltInCamera() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CameraPage(
+          projectId: _project.id,
+          projectService: widget.projectService,
+        ),
+      ),
+    );
+    await _refreshProject();
+  }
+
+  /// 【备用通路 · 默认停用】系统相机（image_picker）
+  ///
+  /// 保留原因：自研相机若在个别机型上异常，把 [_useBuiltInCamera] 改为 false
+  /// 即可立即回退到原实现。注意此路径存在系统相机自带的确认页。
+  Future<void> _takePhotoWithSystemCamera() async {
     try {
       final xFile = await _imagePicker.pickImage(
         source: ImageSource.camera,
@@ -137,21 +173,10 @@ class _ProjectPageState extends State<ProjectPage> {
     await widget.projectService.addPhoto(_project.id, record);
     await _refreshProject();
 
-    // 拍照后直接进入编辑页
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PhotoEditorPage(
-            photoRecord: record,
-            allPhotos: _project.photos,
-            projectId: _project.id,
-            projectService: widget.projectService,
-            startEditing: true,
-          ),
-        ),
-      ).then((_) => _refreshProject());
-    }
+    // 说明：此处不再自动跳转批注编辑页。
+    // 原行为是拍照后立刻进入批注页并要求点右上角 ✓ 保存，与系统相机自带的
+    // 重拍确认叠加成「两次确认」，用户反馈过于繁琐。现改为拍完即入列表；
+    // 需要批注时在列表中点开该照片，在查看页点右上角铅笔图标进入编辑。
   }
 
   void _openPhoto(PhotoRecord record) {

@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>用于拍摄勘察现场照片并保存到当前项目</string>
 </dict>
 </plist>

@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+    <!-- 应用内自研相机（camera 插件）需要相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- required=false：无摄像头的设备也允许安装，运行时再降级提示 -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <application
         android:label="勘察工具箱"
         android:name="${applicationName}"
