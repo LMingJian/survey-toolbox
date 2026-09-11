@@ -7,6 +7,7 @@ class PhotoRecord {
   String note;                     // 下方文字说明
   final DateTime captureTime;      // 拍摄时间
   List<AnnotationData> annotations; // 批注数据
+  String? groupId;                 // 所属分组 id（null = 未分组）
 
   PhotoRecord({
     required this.id,
@@ -15,6 +16,7 @@ class PhotoRecord {
     this.note = '',
     required this.captureTime,
     List<AnnotationData>? annotations,
+    this.groupId,
   }) : annotations = annotations ?? [];
 
   bool get hasAnnotations => annotations.isNotEmpty;
@@ -28,6 +30,7 @@ class PhotoRecord {
       'note': note,
       'captureTime': captureTime.toIso8601String(),
       'annotations': annotations.map((a) => a.toJson()).toList(),
+      'groupId': groupId,
     };
   }
 
@@ -41,6 +44,8 @@ class PhotoRecord {
       annotations: (json['annotations'] as List)
           .map((a) => AnnotationData.fromJson(a))
           .toList(),
+      // 旧数据没有该字段，缺省为未分组
+      groupId: json['groupId'],
     );
   }
 }

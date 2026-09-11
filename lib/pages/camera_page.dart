@@ -451,7 +451,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
               const Spacer(),
               _circleButton(
                 icon: _flashIcon,
-                tooltip: '闪光灯：${_flashLabel}',
+                tooltip: '闪光灯：$_flashLabel',
                 dimmed: _isFrontCamera,
                 onPressed: _cycleFlash,
               ),
@@ -519,7 +519,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
             height: 56,
             fit: BoxFit.cover,
             gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => Container(color: Colors.white24),
+            errorBuilder: (_, _, _) => Container(color: Colors.white24),
           ),
         ),
         Positioned(

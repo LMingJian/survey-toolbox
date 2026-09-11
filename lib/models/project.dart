@@ -1,3 +1,4 @@
+import 'photo_group.dart';
 import 'photo_record.dart';
 
 class Project {
@@ -7,6 +8,7 @@ class Project {
   DateTime? surveyDate;      // 勘察日期（可选）
   final DateTime createdAt;
   List<PhotoRecord> photos;
+  List<PhotoGroup> groups;   // 照片分组（列表顺序即区块显示顺序）
 
   Project({
     required this.id,
@@ -15,8 +17,10 @@ class Project {
     this.surveyDate,
     DateTime? createdAt,
     List<PhotoRecord>? photos,
+    List<PhotoGroup>? groups,
   }) : photos = photos ?? [],
-      createdAt = createdAt ?? DateTime.now();
+       groups = groups ?? [],
+       createdAt = createdAt ?? DateTime.now();
 
   int get photoCount => photos.length;
 
@@ -28,6 +32,7 @@ class Project {
       'surveyDate': surveyDate?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'photos': photos.map((p) => p.toJson()).toList(),
+      'groups': groups.map((g) => g.toJson()).toList(),
     };
   }
 
@@ -43,6 +48,12 @@ class Project {
       photos: (json['photos'] as List)
           .map((p) => PhotoRecord.fromJson(p))
           .toList(),
+      // 旧数据无该字段，缺省为空列表
+      groups:
+          (json['groups'] as List?)
+              ?.map((g) => PhotoGroup.fromJson(g as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }

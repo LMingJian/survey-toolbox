@@ -5,21 +5,33 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../models/project.dart';
 import '../models/photo_record.dart';
-import '../utils/date_utils.dart' show ToolDateUtils;
 
 class ExportService {
   Future<Uint8List> exportToBytes(Project project) async {
     debugPrint(
-      '[Export] 开始, 项目: ${project.name}, 照片: ${project.photos.length}',
+      '[Export] 开始, 项目: ${project.name}, 照片: ${project.photos.length}, '
+      '分组: ${project.groups.length}',
     );
 
-    final groupedPhotos = <String, List<PhotoRecord>>{};
-    for (final photo in project.photos) {
-      final dateKey = ToolDateUtils.formatDate(photo.captureTime);
-      groupedPhotos.putIfAbsent(dateKey, () => []).add(photo);
+    // 按分组切分：先各分组（按 groups 顺序），再未分组（置底）
+    // 无分组时输出与改造前完全一致（只有一段、无小标题）
+    final hasGroups = project.groups.isNotEmpty;
+    final groupIds = project.groups.map((g) => g.id).toSet();
+    bool isUngrouped(PhotoRecord photo) =>
+        photo.groupId == null || !groupIds.contains(photo.groupId);
+
+    final sections = <({String? title, List<PhotoRecord> photos})>[];
+    for (final group in project.groups) {
+      final members = project.photos
+          .where((p) => p.groupId == group.id)
+          .toList();
+      if (members.isEmpty) continue; // 空分组不输出
+      sections.add((title: group.name, photos: members));
     }
-    final sortedDates = groupedPhotos.keys.toList()
-      ..sort((a, b) => a.compareTo(b));
+    final ungrouped = project.photos.where(isUngrouped).toList();
+    if (ungrouped.isNotEmpty) {
+      sections.add((title: hasGroups ? '未分组' : null, photos: ungrouped));
+    }
 
     var globalIndex = 0;
     var builder = docx();
@@ -56,9 +68,34 @@ class ExportService {
 
     builder = builder.add(DocxParagraph(children: [])); // 空行
 
-    for (final dateKey in sortedDates) {
-      final photos = groupedPhotos[dateKey]!;
-      photos.sort((a, b) => a.captureTime.compareTo(b.captureTime));
+    for (final section in sections) {
+      // 分组小标题（未分组且项目无分组时不输出）
+      final title = section.title;
+      if (title != null) {
+        builder = builder.add(
+          DocxParagraph(
+            borderBottomSide: DocxBorderSide(
+              style: DocxBorder.single,
+              size: 8,
+              color: DocxColor('1F4E79'),
+            ),
+            paddingBottom: 4,
+            children: [
+              DocxText(
+                title,
+                fontSize: 20,
+                fontWeight: DocxFontWeight.bold,
+                color: DocxColor('1F4E79'),
+              ),
+            ],
+          ),
+        );
+        builder = builder.add(DocxParagraph(children: [])); // 空行
+      }
+
+      // 段内按拍摄时间排序（与改造前一致）
+      final photos = List<PhotoRecord>.from(section.photos)
+        ..sort((a, b) => a.captureTime.compareTo(b.captureTime));
 
       for (final photo in photos) {
         globalIndex++;
